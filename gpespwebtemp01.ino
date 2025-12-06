@@ -14,6 +14,13 @@
 #include <DallasTemperature.h>
 #include <EEPROM.h>
 #include <ESPmDNS.h>
+#include <PicoMQTT.h>
+
+#if __has_include("config.h")
+#include "config.h"
+#endif
+
+PicoMQTT::Server mqtt;
 
 MDNSResponder mdns;
 
@@ -412,7 +419,13 @@ void setup() {
   previousMillis = millis();
   previousMillisp = millis();
   previousMillisf = millis();
-}
+  // Subscribe to a topic pattern and attach a callback mindenható debug!!!
+    mqtt.subscribe("#", [](const char * topic, const char * payload) {
+        Serial.printf("Received message in topic '%s': %s\n", topic, payload);
+    });
+
+  mqtt.begin();
+}//setup vége
 
 // Helper to get temperature by DeviceAddress with scratchpad CRC validation
 float getTempForAddr(DeviceAddress a, bool &ok) {
@@ -429,9 +442,12 @@ float getTempForAddr(DeviceAddress a, bool &ok) {
   float t = (float)raw / 16.0;
   ok = true;
   return t;
+  
+   
 }
 
 void loop() {
+  mqtt.loop();
   server.handleClient();
 
   unsigned long now = millis();
